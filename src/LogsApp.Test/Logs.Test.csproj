@@ -15,17 +15,33 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest"/>
+      <Compile Remove="src\**" />
+      <Compile Remove="TestsResult\**" />
+      <EmbeddedResource Remove="src\**" />
+      <EmbeddedResource Remove="TestsResult\**" />
+      <None Remove="src\**" />
+      <None Remove="TestsResult\**" />
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="Xunit"/>
+        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0"/>
-        <PackageReference Include="xunit.v3" Version="3.1.0"/>
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5"/>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentAssertions" Version="8.8.0" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+        <PackageReference Include="xunit.v3" Version="3.1.0" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Logs.Core\Logs.Core.csproj" />
+      <ProjectReference Include="..\Logs.Formatters\Logs.Formatters.csproj" />
+      <ProjectReference Include="..\Logs.Infrastructure\Logs.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>
