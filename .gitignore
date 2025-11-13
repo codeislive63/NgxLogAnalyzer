@@ -482,4 +482,12 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+#Vs code
 /.vscode
+
+# output acceptance-tests
+/scripts/data/output/*
+!/scripts/data/output/expected.json
+!/scripts/data/output/existing.json
+/src/LogsApp.Test/TestsResult/coveragereport
