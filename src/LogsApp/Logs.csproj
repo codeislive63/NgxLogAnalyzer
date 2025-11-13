@@ -7,4 +7,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Logs.Core\Logs.Core.csproj" />
+    <ProjectReference Include="..\Logs.Formatters\Logs.Formatters.csproj" />
+    <ProjectReference Include="..\Logs.Infrastructure\Logs.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
