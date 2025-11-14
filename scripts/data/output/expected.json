@@ -6,8 +6,8 @@
   "totalRequestsCount": 256,
   "responseSizeInBytes": {
     "average": 206.05,
-    "max": 3318.0,
-    "p95": 382.0
+    "max": 3318,
+    "p95": 382
   },
   "resources": [
     {
