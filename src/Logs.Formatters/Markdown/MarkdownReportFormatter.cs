@@ -29,7 +29,7 @@ public sealed class MarkdownReportFormatter : IReportFormatter
         sb.AppendLine($"|       Файл(-ы)        | `{string.Join(", ", stats.Files)}` |");
         sb.AppendLine($"|    Начальная дата     |   {fromStr} |");
         sb.AppendLine($"|     Конечная дата     |   {toStr} |");
-        sb.AppendLine($"|  Количество запросов  |       {stats.TotalRequestsCount} |");
+        sb.AppendLine($"|  Количество запросов  |         {stats.TotalRequestsCount} |");
         sb.AppendLine($"| Средний размер ответа |         {stats.ResponseSizeInBytes.average}b |");
         sb.AppendLine($"|  95p размера ответа   |         {stats.ResponseSizeInBytes.p95}b |");
         sb.AppendLine();
@@ -39,9 +39,9 @@ public sealed class MarkdownReportFormatter : IReportFormatter
         sb.AppendLine("|     Ресурс      | Количество |");
         sb.AppendLine("|:---------------:|-----------:|");
 
-        foreach (var r in stats.Resources)
+        foreach (var (resource, totalRequestsCount) in stats.Resources)
         {
-            sb.AppendLine($"|  `{r.resource}`  |      {r.totalRequestsCount} |");
+            sb.AppendLine($"|  `{resource}`  |      {totalRequestsCount} |");
         }
 
         sb.AppendLine();
