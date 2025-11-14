@@ -25,8 +25,10 @@ public sealed class GlobResolver : IGlobResolver
 
         return !Directory.Exists(rootDir)
             ? throw new FileNotFoundException($"Директория не найдена: {rootDir}")
-            : Directory.EnumerateFiles(rootDir, "*", SearchOption.AllDirectories)
-            .Where(p => Regex.IsMatch(p.Replace('\\', '/'), regex, RegexOptions.IgnoreCase));
+            : Directory
+            .EnumerateFiles(rootDir, "*", SearchOption.AllDirectories)
+            .Select(p => p.Replace('\\', '/'))
+            .Where(p => Regex.IsMatch(p, regex, RegexOptions.IgnoreCase));
     }
 
     private static bool IsUrl(string s) => s.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
@@ -55,18 +57,31 @@ public sealed class GlobResolver : IGlobResolver
         for (int i = 0; i < glob.Length; i++)
         {
             char c = glob[i];
-            char next = i + 1 < glob.Length ? glob[i + 1] : '\0';
 
-            if (c == '*' && next == '*')
+            if (c == '*')
             {
-                sb.Append(".*");
-                i++;
+                bool isDoubleStar = i + 1 < glob.Length && glob[i + 1] == '*';
+
+                if (isDoubleStar && i + 2 < glob.Length && glob[i + 2] == '/')
+                {
+                    sb.Append("(?:[^/]*/)*");
+                    i += 2;
+                    continue;
+                }
+
+                if (isDoubleStar)
+                {
+                    sb.Append(".*");
+                    i++;
+                    continue;
+                }
+
+                sb.Append("[^/]*");
                 continue;
             }
 
             string part = c switch
             {
-                '*' => "[^/]*",
                 '?' => ".",
                 '.' => "\\.",
                 '/' => "/",
