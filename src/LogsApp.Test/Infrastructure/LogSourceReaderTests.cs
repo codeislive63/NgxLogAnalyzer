@@ -5,7 +5,7 @@ using Logs.Core.Domain.Models.Stats;
 using Logs.Infrastructure.Sources;
 using System.Net;
 
-namespace Logs.Tests.Infrastructure;
+namespace Logs.Test.Infrastructure;
 
 /// <summary>
 /// Тесты для читателя источников лог-файлов
@@ -19,14 +19,14 @@ public class LogSourceReaderTests
     public async Task EnumerateSourcesAsync_ShouldReturnLocalFiles()
     {
         var tempFile = Path.GetTempFileName().Replace(".tmp", ".log");
-        await File.WriteAllTextAsync(tempFile, "line1\nline2");
+        await File.WriteAllTextAsync(tempFile, "line1\nline2", TestContext.Current.CancellationToken);
 
         var globResolver = new FakeGlobResolver([tempFile]);
         var reader = new LogSourceReader(globResolver, new DelegatingClientFactory(_ => new HttpClient()));
 
         var sources = new List<LogSource>();
 
-        await foreach (var source in reader.EnumerateSourcesAsync("pattern"))
+        await foreach (var source in reader.EnumerateSourcesAsync("pattern", TestContext.Current.CancellationToken))
         {
             sources.Add(source);
         }
@@ -37,7 +37,7 @@ public class LogSourceReaderTests
 
         var lines = new List<string>();
 
-        await foreach (var line in reader.ReadLinesAsync(sources[0]))
+        await foreach (var line in reader.ReadLinesAsync(sources[0], TestContext.Current.CancellationToken))
         {
             lines.Add(line);
         }
@@ -68,7 +68,7 @@ public class LogSourceReaderTests
 
         LogSource? remoteSource = null;
 
-        await foreach (var source in reader.EnumerateSourcesAsync("pattern"))
+        await foreach (var source in reader.EnumerateSourcesAsync("pattern", TestContext.Current.CancellationToken))
         {
             remoteSource = source;
         }
@@ -77,7 +77,7 @@ public class LogSourceReaderTests
 
         var lines = new List<string>();
 
-        await foreach (var line in reader.ReadLinesAsync(remoteSource!.Value))
+        await foreach (var line in reader.ReadLinesAsync(remoteSource!.Value, TestContext.Current.CancellationToken))
         {
             lines.Add(line);
         }
@@ -123,7 +123,7 @@ public class LogSourceReaderTests
 
         LogSource? remoteSource = null;
 
-        await foreach (var source in reader.EnumerateSourcesAsync("pattern"))
+        await foreach (var source in reader.EnumerateSourcesAsync("pattern", TestContext.Current.CancellationToken))
         {
             remoteSource = source;
         }
@@ -147,7 +147,7 @@ public class LogSourceReaderTests
     public async Task ReadLinesAsync_Local_ShouldCancel_Midway()
     {
         var tmp = Path.ChangeExtension(Path.GetTempFileName(), ".log");
-        await File.WriteAllLinesAsync(tmp, Enumerable.Range(0, 50_000).Select(i => $"line {i}"));
+        await File.WriteAllLinesAsync(tmp, Enumerable.Range(0, 50_000).Select(i => $"line {i}"), TestContext.Current.CancellationToken);
 
         var globResolver = new FakeGlobResolver([tmp]);
         var reader = new LogSourceReader(globResolver, new DelegatingClientFactory(_ => new HttpClient()));
@@ -168,11 +168,11 @@ public class LogSourceReaderTests
                     }
                 }
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         try
         {
-            await Task.WhenAny(t, Task.Delay(TimeSpan.FromSeconds(5)));
+            await Task.WhenAny(t, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
             read.Should().BeLessThan(50_000);
         }
         catch (OperationCanceledException) { }
@@ -210,11 +210,11 @@ public class LogSourceReaderTests
                     }
                 }
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         try
         {
-            await Task.WhenAny(t, Task.Delay(TimeSpan.FromSeconds(5)));
+            await Task.WhenAny(t, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
             count.Should().BeLessThan(50_000);
         }
         catch (OperationCanceledException) { }
@@ -233,7 +233,7 @@ public class LogSourceReaderTests
         for (int i = 0; i < total; i++)
         {
             var p = Path.Combine(Path.GetTempPath(), $"enum_{Guid.NewGuid():N}.log");
-            await File.WriteAllTextAsync(p, "x");
+            await File.WriteAllTextAsync(p, "x", TestContext.Current.CancellationToken);
             created.Add(p);
         }
 
@@ -253,11 +253,11 @@ public class LogSourceReaderTests
                         cts.Cancel();
                     }
                 }
-            });
+            }, TestContext.Current.CancellationToken);
 
             try
             {
-                await Task.WhenAny(t, Task.Delay(TimeSpan.FromSeconds(5)));
+                await Task.WhenAny(t, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
                 seen.Should().BeLessThan(total);
             }
             catch (OperationCanceledException) { }

@@ -2,7 +2,7 @@ using FluentAssertions;
 using Logs.Core.Application.Exceptions;
 using Logs.Core.Application.Validation;
 
-namespace Logs.Tests.Application;
+namespace Logs.Test.Application;
 
 /// <summary>
 /// Тесты для валидатора выходного файла
