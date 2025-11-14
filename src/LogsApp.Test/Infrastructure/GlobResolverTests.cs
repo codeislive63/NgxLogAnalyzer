@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Logs.Infrastructure.Sources;
 
-namespace Logs.Tests.Infrastructure;
+namespace Logs.Test.Infrastructure;
 
 /// <summary>
 /// Тесты для резолвера glob-паттернов

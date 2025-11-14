@@ -2,7 +2,7 @@ using FluentAssertions;
 using Logs.Core.Domain.Aggregation;
 using Logs.Core.Domain.Models.Stats;
 
-namespace Logs.Tests.Domain.Aggregation;
+namespace Logs.Test.Domain.Aggregation;
 
 /// <summary>
 /// Тесты для агрегатора статистики

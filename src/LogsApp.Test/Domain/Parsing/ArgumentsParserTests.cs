@@ -2,7 +2,7 @@ using FluentAssertions;
 using Logs.Core.Application.Exceptions;
 using Logs.Core.Domain.Parsing;
 
-namespace Logs.Tests.Domain.Parsing;
+namespace Logs.Test.Domain.Parsing;
 
 /// <summary>
 /// Тесты для парсера аргументов командной строки

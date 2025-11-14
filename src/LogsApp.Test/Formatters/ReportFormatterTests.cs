@@ -8,7 +8,7 @@ using Logs.Formatters.Json;
 using Logs.Formatters.Markdown;
 using System.Text.Json;
 
-namespace Logs.Tests.Formatters;
+namespace Logs.Test.Formatters;
 
 /// <summary>
 /// Тесты для форматтеров отчетов
@@ -116,7 +116,7 @@ public class ReportFormatterTests
     [Fact]
     public void ReportFormatterResolver_ShouldThrow_WhenFormatterNotFound()
     {
-        var resolver = new ReportFormatterResolver(Array.Empty<IReportFormatter>());
+        var resolver = new ReportFormatterResolver([]);
 
         Action act = () => resolver.Resolve("txt");
 
