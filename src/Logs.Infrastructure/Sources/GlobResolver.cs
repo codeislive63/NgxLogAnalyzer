@@ -19,14 +19,22 @@ public sealed class GlobResolver : IGlobResolver
             return [pattern];
         }
 
+        if (pattern.IndexOfAny(['*', '?']) < 0)
+        {
+            return [pattern];
+        }
+
         var normalized = pattern.Replace('\\', '/');
         var rootDir = FindRootDirectory(normalized);
+
+        if (!Directory.Exists(rootDir))
+        {
+            throw new FileNotFoundException($"Директория не найдена: {rootDir}");
+        }
+
         var regex = GlobToRegex(normalized);
 
-        return !Directory.Exists(rootDir)
-            ? throw new FileNotFoundException($"Директория не найдена: {rootDir}")
-            : Directory
-            .EnumerateFiles(rootDir, "*", SearchOption.AllDirectories)
+        return Directory.EnumerateFiles(rootDir, "*", SearchOption.AllDirectories)
             .Select(p => p.Replace('\\', '/'))
             .Where(p => Regex.IsMatch(p, regex, RegexOptions.IgnoreCase));
     }
