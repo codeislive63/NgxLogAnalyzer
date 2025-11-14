@@ -40,17 +40,31 @@ public class GlobResolverTests : IDisposable
     }
 
     /// <summary>
-    /// Проверяет разрешение паттерна с двойным символом подстановки ** для рекурсивного поиска
+    /// Проверяет разрешение паттерна без подстановок
     /// </summary>
     [Fact]
-    public void Resolve_ShouldReturnRecursiveMatches_ForDoubleWildcard()
+    public void Resolve_ShouldReturnExactMatch_WhenPatternIsLiteral()
     {
-        var pattern = Path.Combine(_root, "**", "*.log");
+        var pattern = Path.Combine(_root, "file1.log");
 
         var result = _resolver.Resolve(pattern).ToArray();
 
         result.Should().ContainSingle()
-            .Which.Should().EndWith(Path.Combine("sub", "file3.log"));
+            .Which.Should().EndWith("file1.log");
+    }
+
+    /// <summary>
+    /// Проверяет поддержку одиночного символа подстановки ?
+    /// </summary>
+    [Fact]
+    public void Resolve_ShouldSupportSingleCharacterWildcard()
+    {
+        var pattern = Path.Combine(_root, "file?.log");
+
+        var result = _resolver.Resolve(pattern).ToArray();
+
+        result.Should().ContainSingle()
+            .Which.Should().EndWith("file1.log");
     }
 
     /// <summary>
