@@ -19,12 +19,30 @@ public sealed class ArgumentsParser : IArgumentsParser
     public Arguments Parse(string[] args)
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var paths = new List<string>();
 
         for (int i = 0; i < args.Length; i++)
         {
             var a = args[i];
 
-            if (a.StartsWith("--"))
+            if (a is "--path" or "-p")
+            {
+                if (i + 1 >= args.Length || args[i + 1].StartsWith('-'))
+                {
+                    throw new CliException($"Отсутствует значение для аргумента: {a}");
+                }
+
+                i++;
+
+                while (i < args.Length && !args[i].StartsWith('-'))
+                {
+                    paths.Add(args[i]);
+                    i++;
+                }
+
+                i--;
+            }
+            else if (a.StartsWith("--"))
             {
                 var parts = a.Split('=', 2);
 
@@ -59,7 +77,6 @@ public sealed class ArgumentsParser : IArgumentsParser
             }
         }
 
-        // Поддерживаемые параметры
         var supportedParams = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "--path", "-p", "--format", "-f", "--output", "-o", "--from", "--to"
@@ -73,7 +90,7 @@ public sealed class ArgumentsParser : IArgumentsParser
             }
         }
 
-        if (!map.TryGetValue("--path", out var path) && !map.TryGetValue("-p", out path))
+        if (paths.Count == 0)
         {
             throw new CliException("Отсутствует обязательный параметр --path/-p");
         }
@@ -97,7 +114,11 @@ public sealed class ArgumentsParser : IArgumentsParser
 
         if (map.TryGetValue("--from", out var fromRaw) && !string.IsNullOrWhiteSpace(fromRaw))
         {
-            if (!DateTimeOffset.TryParse(fromRaw, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var fromParsed))
+            if (!DateTimeOffset.TryParse(
+                    fromRaw,
+                    null,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out var fromParsed))
             {
                 throw new CliException("Некорректное значение даты для параметра --from");
             }
@@ -107,7 +128,11 @@ public sealed class ArgumentsParser : IArgumentsParser
 
         if (map.TryGetValue("--to", out var toRaw) && !string.IsNullOrWhiteSpace(toRaw))
         {
-            if (!DateTimeOffset.TryParse(toRaw, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var toParsed))
+            if (!DateTimeOffset.TryParse(
+                    toRaw,
+                    null,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out var toParsed))
             {
                 throw new CliException("Некорректное значение даты для параметра --to");
             }
@@ -115,8 +140,11 @@ public sealed class ArgumentsParser : IArgumentsParser
             to = toParsed;
         }
 
-        return from is not null && to is not null && from >= to
-            ? throw new CliException("Параметр --from должен быть меньше значения параметра --to")
-            : new Arguments(path, format, output, from, to);
+        if (from is not null && to is not null && from >= to)
+        {
+            throw new CliException("Параметр --from должен быть меньше значения параметра --to");
+        }
+
+        return new Arguments(paths, format, output, from, to);
     }
 }
