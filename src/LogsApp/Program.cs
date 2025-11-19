@@ -11,31 +11,30 @@ using Logs.Formatters.Extensions;
 using Logs.Infrastructure.Extensions;
 using Logs.Infrastructure.Sources;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Net;
 
-using var host = Host.CreateDefaultBuilder()
-    .ConfigureLogging(lb =>
-    {
-        lb.ClearProviders();
-        lb.AddSimpleConsole(o =>
-        {
-            o.SingleLine = true;
-            o.TimestampFormat = "HH:mm:ss ";
-        });
-    })
-    .ConfigureServices(services =>
-    {
-        services.AddLogsCore();
-        services.AddSingleton<IGlobResolver, GlobResolver>();
-        services.AddSingleton<ILogSourceReader, LogSourceReader>();
-        services.AddLogsFormatters();
-        services.AddHttpClient();
-    })
-    .Build();
+var services = new ServiceCollection();
 
-var logger = host.Services
+services.AddLogging(lb =>
+{
+    lb.ClearProviders();
+    lb.AddSimpleConsole(o =>
+    {
+        o.SingleLine = true;
+        o.TimestampFormat = "HH:mm:ss ";
+    });
+});
+
+services.AddLogsCore();
+services.AddSingleton<IGlobResolver, GlobResolver>();
+services.AddSingleton<ILogSourceReader, LogSourceReader>();
+services.AddLogsFormatters();
+services.AddHttpClient();
+
+using var provider = services.BuildServiceProvider();
+
+var logger = provider
     .GetRequiredService<ILoggerFactory>()
     .CreateLogger("LogsApp");
 
@@ -47,26 +46,24 @@ Console.CancelKeyPress += (_, e) =>
     cts.Cancel();
 };
 
-var appLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-
-using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, appLifetime.ApplicationStopping);
-var ct = linkedCts.Token;
+var ct = cts.Token;
 
 try
 {
-    var parser = host.Services.GetRequiredService<IArgumentsParser>();
+    var parser = provider.GetRequiredService<IArgumentsParser>();
     var arguments = parser.Parse(args);
 
-    var formatterResolver = host.Services.GetRequiredService<IReportFormatterResolver>();
+    var formatterResolver = provider.GetRequiredService<IReportFormatterResolver>();
     var formatter = formatterResolver.Resolve(arguments.Format);
 
-    var sourceReader = host.Services.GetRequiredService<ILogSourceReader>();
-    var lineParser = host.Services.GetRequiredService<ILogLineParser>();
-    var aggregator = host.Services.GetRequiredService<ILogStatsAggregator>();
+    var sourceReader = provider.GetRequiredService<ILogSourceReader>();
+    var lineParser = provider.GetRequiredService<ILogLineParser>();
+    var aggregator = provider.GetRequiredService<ILogStatsAggregator>();
 
     var entries = new List<LogEntry>();
     var filesList = new List<string>();
 
+    // 🔥 ВАЖНО — добавлена поддержка нескольких путей!
     foreach (var path in arguments.Paths)
     {
         await foreach (var source in sourceReader.EnumerateSourcesAsync(path, ct).WithCancellation(ct))
