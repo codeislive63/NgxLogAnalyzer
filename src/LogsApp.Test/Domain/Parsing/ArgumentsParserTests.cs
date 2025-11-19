@@ -28,11 +28,31 @@ public class ArgumentsParserTests
 
         var result = _parser.Parse(args);
 
-        result.Path.Should().Be("logs/*.log");
+        result.Paths.Should().ContainSingle().Which.Should().Be("logs/*.log");
         result.Format.Should().Be("json");
         result.Output.Should().Be("result.json");
         result.From.Should().Be(DateTimeOffset.Parse("2025-01-01T00:00:00Z"));
         result.To.Should().Be(DateTimeOffset.Parse("2025-01-02T00:00:00Z"));
+    }
+
+    /// <summary>
+    /// Поддержка нескольких путей после --path/-p
+    /// </summary>
+    [Fact]
+    public void Parse_ShouldSupportMultiplePaths_ForShortP()
+    {
+        var args = new[]
+        {
+            "-p", "logs/part1.txt", "logs/part2.txt",
+            "--format", "json",
+            "--output", "result.json"
+        };
+
+        var result = _parser.Parse(args);
+
+        result.Paths.Should().Equal("logs/part1.txt", "logs/part2.txt");
+        result.Format.Should().Be("json");
+        result.Output.Should().Be("result.json");
     }
 
     /// <summary>
