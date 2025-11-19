@@ -1,5 +1,4 @@
-﻿using System.Net;
-using Logs.Core.Application.Abstractions.Cli;
+﻿using Logs.Core.Application.Abstractions.Cli;
 using Logs.Core.Application.Abstractions.Reporting;
 using Logs.Core.Application.Abstractions.Sources;
 using Logs.Core.Application.Exceptions;
@@ -12,29 +11,31 @@ using Logs.Formatters.Extensions;
 using Logs.Infrastructure.Extensions;
 using Logs.Infrastructure.Sources;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Net;
 
-var services = new ServiceCollection();
-
-services.AddLogging(lb =>
-{
-    lb.ClearProviders();
-    lb.AddSimpleConsole(o =>
+using var host = Host.CreateDefaultBuilder()
+    .ConfigureLogging(lb =>
     {
-        o.SingleLine = true;
-        o.TimestampFormat = "HH:mm:ss ";
-    });
-});
+        lb.ClearProviders();
+        lb.AddSimpleConsole(o =>
+        {
+            o.SingleLine = true;
+            o.TimestampFormat = "HH:mm:ss ";
+        });
+    })
+    .ConfigureServices(services =>
+    {
+        services.AddLogsCore();
+        services.AddSingleton<IGlobResolver, GlobResolver>();
+        services.AddSingleton<ILogSourceReader, LogSourceReader>();
+        services.AddLogsFormatters();
+        services.AddHttpClient();
+    })
+    .Build();
 
-services.AddLogsCore();
-services.AddSingleton<IGlobResolver, GlobResolver>();
-services.AddSingleton<ILogSourceReader, LogSourceReader>();
-services.AddLogsFormatters();
-services.AddHttpClient();
-
-using var provider = services.BuildServiceProvider();
-
-var logger = provider
+var logger = host.Services
     .GetRequiredService<ILoggerFactory>()
     .CreateLogger("LogsApp");
 
@@ -46,50 +47,56 @@ Console.CancelKeyPress += (_, e) =>
     cts.Cancel();
 };
 
-var ct = cts.Token;
+var appLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+
+using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, appLifetime.ApplicationStopping);
+var ct = linkedCts.Token;
 
 try
 {
-    var parser = provider.GetRequiredService<IArgumentsParser>();
+    var parser = host.Services.GetRequiredService<IArgumentsParser>();
     var arguments = parser.Parse(args);
 
-    var formatterResolver = provider.GetRequiredService<IReportFormatterResolver>();
+    var formatterResolver = host.Services.GetRequiredService<IReportFormatterResolver>();
     var formatter = formatterResolver.Resolve(arguments.Format);
 
-    var sourceReader = provider.GetRequiredService<ILogSourceReader>();
-    var lineParser = provider.GetRequiredService<ILogLineParser>();
-    var aggregator = provider.GetRequiredService<ILogStatsAggregator>();
+    var sourceReader = host.Services.GetRequiredService<ILogSourceReader>();
+    var lineParser = host.Services.GetRequiredService<ILogLineParser>();
+    var aggregator = host.Services.GetRequiredService<ILogStatsAggregator>();
 
     var entries = new List<LogEntry>();
     var filesList = new List<string>();
 
-    await foreach (var source in sourceReader.EnumerateSourcesAsync(arguments.Path, ct).WithCancellation(ct))
+    foreach (var path in arguments.Paths)
     {
-        filesList.Add(source.DisplayName);
-
-        await foreach (var line in sourceReader.ReadLinesAsync(source, ct).WithCancellation(ct))
+        await foreach (var source in sourceReader.EnumerateSourcesAsync(path, ct).WithCancellation(ct))
         {
-            ct.ThrowIfCancellationRequested();
+            filesList.Add(source.DisplayName);
 
-            var entry = lineParser.Parse(line);
-
-            if (entry == null)
+            await foreach (var line in sourceReader.ReadLinesAsync(source, ct).WithCancellation(ct))
             {
-                logger.LogWarning("Skipping malformed line: {Line}", line);
-                continue;
-            }
+                ct.ThrowIfCancellationRequested();
 
-            if (arguments.From is { } from && entry.TimestampUtc < from)
-            {
-                continue;
-            }
+                var entry = lineParser.Parse(line);
 
-            if (arguments.To is { } to && entry.TimestampUtc > to)
-            {
-                continue;
-            }
+                if (entry == null)
+                {
+                    logger.LogWarning("Skipping malformed line: {Line}", line);
+                    continue;
+                }
 
-            entries.Add(entry);
+                if (arguments.From is { } from && entry.TimestampUtc < from)
+                {
+                    continue;
+                }
+
+                if (arguments.To is { } to && entry.TimestampUtc > to)
+                {
+                    continue;
+                }
+
+                entries.Add(entry);
+            }
         }
     }
 
