@@ -1,4 +1,5 @@
 using Logs.Core.Application.Exceptions;
+using System.Runtime.Intrinsics.X86;
 
 namespace Logs.Core.Application.Validation;
 
@@ -25,14 +26,19 @@ public sealed class OutputPathValidator
         }
 
         var ext = Path.GetExtension(outputPath).ToLowerInvariant();
+        var fmt = format.ToLowerInvariant();
 
-        var expectedExt = format.ToLowerInvariant() switch
+        var expectedExtensions = new Dictionary<string, string>
         {
-            "json" => ".json",
-            "markdown" => ".md",
-            "adoc" => ".ad",
-            _ => throw new CliException($"Неизвестный формат вывода: {format}")
+            ["json"] = ".json",
+            ["markdown"] = ".md",
+            ["adoc"] = ".ad"
         };
+
+        if (!expectedExtensions.TryGetValue(fmt, out var expectedExt))
+        {
+            throw new CliException($"Неизвестный формат вывода: {format}");
+        }
 
         if (ext != expectedExt)
         {

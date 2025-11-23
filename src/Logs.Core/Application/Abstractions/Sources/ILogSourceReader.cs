@@ -13,7 +13,7 @@ public interface ILogSourceReader
     IAsyncEnumerable<LogSource> EnumerateSourcesAsync(string pattern, CancellationToken ct = default);
 
     /// <summary>
-    /// Читает строки из указанного источника
+    /// Асинхронно читает строки логов из указанного источника
     /// </summary>
     IAsyncEnumerable<string> ReadLinesAsync(LogSource source, CancellationToken ct = default);
 }

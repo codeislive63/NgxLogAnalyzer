@@ -31,8 +31,16 @@ public sealed partial class NginxLogLineParser : ILogLineParser
 
         var resource = match.Groups["resource"].Value;
         var protocol = match.Groups["protocol"].Value.Trim();
-        var status = int.Parse(match.Groups["status"].Value, CultureInfo.InvariantCulture);
-        var size = int.Parse(match.Groups["size"].Value, CultureInfo.InvariantCulture);
+        
+        if (!int.TryParse(match.Groups["status"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var status))
+        {
+            return null;
+        }
+
+        if (!int.TryParse(match.Groups["size"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var size))
+        {
+            return null;
+        }
 
         return new LogEntry(ts.ToUniversalTime(), resource, protocol, status, size);
     }
