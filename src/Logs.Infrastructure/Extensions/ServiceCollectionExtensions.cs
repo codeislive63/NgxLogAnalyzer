@@ -19,7 +19,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IArgumentsParser, ArgumentsParser>();
         services.AddSingleton<ILogStatsAggregator, LogStatsAggregator>();
         services.AddSingleton<ILogLineParser, NginxLogLineParser>();
-        services.AddSingleton<OutputPathValidator>();
         return services;
     }
 }

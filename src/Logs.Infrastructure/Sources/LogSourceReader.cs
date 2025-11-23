@@ -41,7 +41,7 @@ public sealed class LogSourceReader(IGlobResolver globResolver, IHttpClientFacto
             }
         }
 
-        await Task.Yield();
+        await Task.CompletedTask;
     }
 
     /// <summary>

@@ -38,6 +38,7 @@ var logger = provider
     .GetRequiredService<ILoggerFactory>()
     .CreateLogger("LogsApp");
 
+// Токен отмены, чтобы можно было корректно завершить приложение через Ctrl+C.
 using var cts = new CancellationTokenSource();
 
 Console.CancelKeyPress += (_, e) =>
@@ -52,6 +53,7 @@ try
 {
     var parser = provider.GetRequiredService<IArgumentsParser>();
     var arguments = parser.Parse(args);
+    OutputPathValidator.Validate(arguments.Output, arguments.Format);
 
     var formatterResolver = provider.GetRequiredService<IReportFormatterResolver>();
     var formatter = formatterResolver.Resolve(arguments.Format);
@@ -63,7 +65,6 @@ try
     var entries = new List<LogEntry>();
     var filesList = new List<string>();
 
-    // 🔥 ВАЖНО — добавлена поддержка нескольких путей!
     foreach (var path in arguments.Paths)
     {
         await foreach (var source in sourceReader.EnumerateSourcesAsync(path, ct).WithCancellation(ct))
@@ -98,7 +99,6 @@ try
     }
 
     var stats = aggregator.Aggregate(entries, filesList);
-    OutputPathValidator.Validate(arguments.Output, arguments.Format);
 
     var report = formatter.Format(stats, new ReportContext
     {
