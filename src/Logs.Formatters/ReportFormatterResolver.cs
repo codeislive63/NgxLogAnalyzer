@@ -21,6 +21,6 @@ public sealed class ReportFormatterResolver(IEnumerable<IReportFormatter> format
             string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase)
         );
 
-        return fmt ?? throw new InvalidOperationException($"Unsupported output format: {name}");
+        return fmt ?? throw new InvalidOperationException($"Неподдерживаемый формат вывода: {name}");
     }
 }
