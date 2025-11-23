@@ -31,7 +31,7 @@ public sealed partial class NginxLogLineParser : ILogLineParser
 
         var resource = match.Groups["resource"].Value;
         var protocol = match.Groups["protocol"].Value.Trim();
-        
+
         if (!int.TryParse(match.Groups["status"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var status))
         {
             return null;

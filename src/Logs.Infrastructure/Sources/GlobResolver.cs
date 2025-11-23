@@ -33,7 +33,7 @@ public sealed class GlobResolver : IGlobResolver
         }
 
         var regex = GlobToRegex(normalized);
-        
+
         var patternRegex = new Regex(
             regex,
             RegexOptions.IgnoreCase | RegexOptions.Compiled
