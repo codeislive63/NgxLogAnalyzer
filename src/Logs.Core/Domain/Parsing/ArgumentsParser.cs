@@ -15,6 +15,11 @@ public sealed class ArgumentsParser : IArgumentsParser
         "json", "markdown", "adoc"
     };
 
+    private static readonly HashSet<string> SupportedParameters = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "--path", "-p", "--format", "-f", "--output", "-o", "--from", "--to"
+    };
+
     /// <inheritdoc/>
     public Arguments Parse(string[] args)
     {
@@ -77,14 +82,9 @@ public sealed class ArgumentsParser : IArgumentsParser
             }
         }
 
-        var supportedParams = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "--path", "-p", "--format", "-f", "--output", "-o", "--from", "--to"
-        };
-
         foreach (var key in map.Keys)
         {
-            if (!supportedParams.Contains(key))
+            if (!SupportedParameters.Contains(key))
             {
                 throw new CliException($"Неподдерживаемый параметр: {key}");
             }
