@@ -54,4 +54,36 @@ public class NginxLogLineParserTests
 
         entry.Should().BeNull();
     }
+
+    /// <summary>
+    /// Проверяет, что парсер возвращает null,
+    /// если статус-код в строке лога не является числом
+    /// </summary>
+    [Fact]
+    public void Parse_ShouldReturnNull_WhenStatusIsNotNumber()
+    {
+        const string line =
+            "93.180.71.3 - - [17/May/2015:08:05:32 +0000] " +
+            "\"GET /downloads/product_1 HTTP/1.1\" xxx 0 \"-\" \"Debian\"";
+
+        LogEntry? entry = _parser.Parse(line);
+
+        entry.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Проверяет, что парсер возвращает null,
+    /// если размер ответа в строке лога не является числом
+    /// </summary>
+    [Fact]
+    public void Parse_ShouldReturnNull_WhenSizeIsNotNumber()
+    {
+        const string line =
+            "93.180.71.3 - - [17/May/2015:08:05:32 +0000] " +
+            "\"GET /downloads/product_1 HTTP/1.1\" 200 NaN \"-\" \"Debian\"";
+
+        LogEntry? entry = _parser.Parse(line);
+
+        entry.Should().BeNull();
+    }
 }
