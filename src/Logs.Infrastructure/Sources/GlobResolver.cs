@@ -33,10 +33,15 @@ public sealed class GlobResolver : IGlobResolver
         }
 
         var regex = GlobToRegex(normalized);
+        
+        var patternRegex = new Regex(
+            regex,
+            RegexOptions.IgnoreCase | RegexOptions.Compiled
+        );
 
         return Directory.EnumerateFiles(rootDir, "*", SearchOption.AllDirectories)
             .Select(p => p.Replace('\\', '/'))
-            .Where(p => Regex.IsMatch(p, regex, RegexOptions.IgnoreCase));
+            .Where(p => patternRegex.IsMatch(p));
     }
 
     private static bool IsUrl(string s) => s.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
