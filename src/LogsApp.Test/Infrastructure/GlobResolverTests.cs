@@ -79,6 +79,19 @@ public class GlobResolverTests : IDisposable
     }
 
     /// <summary>
+    /// Проверяет, что резолвер корректно обрабатывает паттерн с двойной звездочкой (**)
+    /// </summary>
+    [Fact]
+    public void Resolve_ShouldSupportDoubleStarRecursive()
+    {
+        var pattern = Path.Combine(_root, "**", "*.log");
+
+        var result = _resolver.Resolve(pattern).ToArray();
+
+        result.Should().HaveCount(2);
+    }
+
+    /// <summary>
     /// Удаляет временную директорию после тестов
     /// </summary>
     public void Dispose()
