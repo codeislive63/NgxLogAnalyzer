@@ -10,5 +10,5 @@ public interface ILogStatsAggregator
     /// <summary>
     /// Агрегирует статистику из списка записей лог-файлов
     /// </summary>
-    LogStats Aggregate(IReadOnlyList<LogEntry> entries, IReadOnlyList<string> files);
+    LogStats Aggregate(IEnumerable<LogEntry> entries, IEnumerable<string> files);
 }
