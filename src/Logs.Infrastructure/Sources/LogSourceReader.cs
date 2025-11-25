@@ -35,9 +35,12 @@ public sealed class LogSourceReader(IGlobResolver globResolver, IHttpClientFacto
 
                 var ext = Path.GetExtension(s).ToLowerInvariant();
 
-                yield return ext is not ".txt" and not ".log"
-                    ? throw new CliException($"Неподдерживаемое расширение входного файла: {ext}")
-                    : new LogSource(s, null, Path.GetFileName(s));
+                if (ext is not ".txt" and not ".log")
+                {
+                    throw new CliException($"Неподдерживаемое расширение входного файла: {ext}");
+                }
+
+                yield return new LogSource(s, null, Path.GetFileName(s));
             }
         }
 
