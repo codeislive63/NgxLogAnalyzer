@@ -4,7 +4,11 @@ using System.Globalization;
 namespace Logs.Core.Domain.Aggregation;
 
 /// <summary>
-/// Агрегатор статистики из записей лог-файлов
+/// Реализация агрегатора статистики по лог-записям.
+/// 
+/// Выполняет полный цикл обработки данных, включая материализацию входной
+/// последовательности, построение распределений, расчёт агрегатов и формирование
+/// результирующей структуры <see cref="LogStats"/>
 /// </summary>
 public sealed class LogStatsAggregator : ILogStatsAggregator
 {
