@@ -1,12 +1,11 @@
 using Logs.Core.Application.Exceptions;
-using System.Runtime.Intrinsics.X86;
 
 namespace Logs.Core.Application.Validation;
 
 /// <summary>
 /// Валидатор пути выходного файла и его расширения
 /// </summary>
-public sealed class OutputPathValidator
+public static class OutputPathValidator
 {
     /// <summary>
     /// Проверяет корректность пути выходного файла, его расширения и существование директории
