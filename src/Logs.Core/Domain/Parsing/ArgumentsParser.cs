@@ -26,62 +26,129 @@ public sealed class ArgumentsParser : IArgumentsParser
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var paths = new List<string>();
 
-        for (int i = 0; i < args.Length; i++)
+        ParseArguments(args, map, paths);
+        ValidateParameters(map, paths);
+
+        var format = GetRequired(map, "--format", "-f",
+            "Отсутствует обязательный параметр --format/-f"
+        );
+
+        var output = GetRequired(map, "--output", "-o",
+            "Отсутствует обязательный параметр --output/-o"
+        );
+
+        if (!SupportedFormats.Contains(format))
+        {
+            throw new CliException($"Неподдерживаемый формат вывода: {format}");
+        }
+
+        var from = ParseDateOrNull(map, "--from",
+            "Некорректное значение даты для параметра --from"
+        );
+
+        var to = ParseDateOrNull(map, "--to",
+            "Некорректное значение даты для параметра --to"
+        );
+
+        if (from is not null && to is not null && from >= to)
+        {
+            throw new CliException("Параметр --from должен быть меньше значения параметра --to");
+        }
+
+        return new Arguments(paths, format, output, from, to);
+    }
+
+    private static void ParseArguments(
+        string[] args,
+        Dictionary<string, string> map,
+        List<string> paths)
+    {
+        for (var i = 0; i < args.Length; i++)
         {
             var a = args[i];
 
             if (a is "--path" or "-p")
             {
-                if (i + 1 >= args.Length || args[i + 1].StartsWith('-'))
-                {
-                    throw new CliException($"Отсутствует значение для аргумента: {a}");
-                }
-
-                i++;
-
-                while (i < args.Length && !args[i].StartsWith('-'))
-                {
-                    paths.Add(args[i]);
-                    i++;
-                }
-
-                i--;
+                ParsePaths(args, ref i, paths);
             }
-            else if (a.StartsWith("--"))
+            else if (a.StartsWith("--", StringComparison.Ordinal))
             {
-                var parts = a.Split('=', 2);
-
-                if (parts.Length == 2)
-                {
-                    map[parts[0]] = parts[1];
-                }
-                else
-                {
-                    if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
-                    {
-                        map[a] = args[++i];
-                    }
-                    else
-                    {
-                        map[a] = "";
-                    }
-                }
+                ParseLongOption(args, ref i, map);
             }
-            else if (a.StartsWith('-'))
+            else if (a.StartsWith("-", StringComparison.Ordinal))
             {
-                if (i + 1 >= args.Length)
-                {
-                    throw new CliException($"Отсутствует значение для аргумента: {a}");
-                }
-
-                map[a] = args[++i];
+                ParseShortOption(args, ref i, map);
             }
             else
             {
                 throw new CliException($"Неподдерживаемый параметр: {a}");
             }
         }
+    }
 
+    private static void ParsePaths(string[] args, ref int i, List<string> paths)
+    {
+        var key = args[i];
+
+        if (i + 1 >= args.Length || args[i + 1].StartsWith('-'))
+        {
+            throw new CliException($"Отсутствует значение для аргумента: {key}");
+        }
+
+        i++;
+
+        while (i < args.Length && !args[i].StartsWith('-'))
+        {
+            paths.Add(args[i]);
+            i++;
+        }
+
+        i--;
+    }
+
+    private static void ParseLongOption(
+        string[] args,
+        ref int i,
+        Dictionary<string, string> map)
+    {
+        var a = args[i];
+        var parts = a.Split('=', 2);
+
+        if (parts.Length == 2)
+        {
+            map[parts[0]] = parts[1];
+            return;
+        }
+
+        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+        {
+            map[a] = args[++i];
+        }
+        else
+        {
+            map[a] = "";
+        }
+    }
+
+    private static void ParseShortOption(
+        string[] args,
+        ref int i,
+        Dictionary<string, string> map)
+    {
+        var a = args[i];
+
+        if (i + 1 >= args.Length)
+        {
+            throw new CliException($"Отсутствует значение для аргумента: {a}");
+        }
+
+        map[a] = args[++i];
+    }
+
+    private static void ValidateParameters(
+        Dictionary<string, string> map,
+        List<string> paths)
+    {
         foreach (var key in map.Keys)
         {
             if (!SupportedParameters.Contains(key))
@@ -94,57 +161,43 @@ public sealed class ArgumentsParser : IArgumentsParser
         {
             throw new CliException("Отсутствует обязательный параметр --path/-p");
         }
+    }
 
-        if (!map.TryGetValue("--format", out var format) && !map.TryGetValue("-f", out format))
+    private static string GetRequired(
+        Dictionary<string, string> map,
+        string longKey,
+        string shortKey,
+        string errorMessage)
+    {
+        if (!map.TryGetValue(longKey, out var value) &&
+            !map.TryGetValue(shortKey, out value))
         {
-            throw new CliException("Отсутствует обязательный параметр --format/-f");
+            throw new CliException(errorMessage);
         }
 
-        if (!map.TryGetValue("--output", out var output) && !map.TryGetValue("-o", out output))
+        return value;
+    }
+
+    private static DateTimeOffset? ParseDateOrNull(
+        Dictionary<string, string> map,
+        string key,
+        string errorMessage)
+    {
+        if (!map.TryGetValue(key, out var raw) ||
+            string.IsNullOrWhiteSpace(raw))
         {
-            throw new CliException("Отсутствует обязательный параметр --output/-o");
+            return null;
         }
 
-        if (!SupportedFormats.Contains(format))
+        if (!DateTimeOffset.TryParse(
+                raw,
+                null,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsed))
         {
-            throw new CliException($"Неподдерживаемый формат вывода: {format}");
+            throw new CliException(errorMessage);
         }
 
-        DateTimeOffset? from = null, to = null;
-
-        if (map.TryGetValue("--from", out var fromRaw) && !string.IsNullOrWhiteSpace(fromRaw))
-        {
-            if (!DateTimeOffset.TryParse(
-                    fromRaw,
-                    null,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                    out var fromParsed))
-            {
-                throw new CliException("Некорректное значение даты для параметра --from");
-            }
-
-            from = fromParsed;
-        }
-
-        if (map.TryGetValue("--to", out var toRaw) && !string.IsNullOrWhiteSpace(toRaw))
-        {
-            if (!DateTimeOffset.TryParse(
-                    toRaw,
-                    null,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                    out var toParsed))
-            {
-                throw new CliException("Некорректное значение даты для параметра --to");
-            }
-
-            to = toParsed;
-        }
-
-        if (from is not null && to is not null && from >= to)
-        {
-            throw new CliException("Параметр --from должен быть меньше значения параметра --to");
-        }
-
-        return new Arguments(paths, format, output, from, to);
+        return parsed;
     }
 }
