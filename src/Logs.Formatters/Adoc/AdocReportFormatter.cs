@@ -1,6 +1,7 @@
 using Logs.Core.Application.Abstractions.Reporting;
 using Logs.Core.Domain.Models;
 using Logs.Core.Domain.Models.Stats;
+using System.Text;
 
 namespace Logs.Formatters.Adoc;
 
@@ -17,7 +18,7 @@ public sealed class AdocReportFormatter : IReportFormatter
     /// </summary>
     public string Format(LogStats stats, ReportContext context)
     {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("== Общая информация");
         sb.AppendLine();
         sb.AppendLine("|===");
