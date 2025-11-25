@@ -12,6 +12,11 @@ public static class OutputPathValidator
     /// </summary>
     public static void Validate(string outputPath, string format)
     {
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            throw new CliException("Путь к выходному файлу не может быть пустым");
+        }
+
         if (File.Exists(outputPath))
         {
             throw new CliException("Выходной файл уже существует");
