@@ -49,7 +49,10 @@ public sealed class LogStatsAggregator : ILogStatsAggregator
                 var count = g.Count();
                 var pct = total == 0 ? 0 : Math.Round(count * 100.0 / total, 2, MidpointRounding.AwayFromZero);
                 var date = g.Key;
-                var weekday = CultureInfo.GetCultureInfo("en-US").DateTimeFormat.GetDayName(date.ToDateTime(TimeOnly.MinValue).DayOfWeek);
+                var weekday = CultureInfo.GetCultureInfo("en-US")
+                                         .DateTimeFormat
+                                         .GetDayName(date.DayOfWeek);
+
                 return (date, weekday, count, pct);
             })
             .ToList();
