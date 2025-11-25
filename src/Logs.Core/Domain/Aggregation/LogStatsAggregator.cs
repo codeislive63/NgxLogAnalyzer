@@ -9,11 +9,14 @@ namespace Logs.Core.Domain.Aggregation;
 public sealed class LogStatsAggregator : ILogStatsAggregator
 {
     /// <inheritdoc />
-    public LogStats Aggregate(IReadOnlyList<LogEntry> entries, IReadOnlyList<string> files)
+    public LogStats Aggregate(IEnumerable<LogEntry> entries, IEnumerable<string> files)
     {
-        var total = entries.Count;
+        var entryList = entries as IReadOnlyList<LogEntry> ?? [.. entries];
+        var fileList = files as IReadOnlyList<string> ?? [.. files];
 
-        var sizes = entries
+        var total = entryList.Count;
+
+        var sizes = entryList
             .Select(e => (double)e.ResponseSizeBytes)
             .OrderBy(x => x)
             .ToArray();
@@ -22,7 +25,7 @@ public sealed class LogStatsAggregator : ILogStatsAggregator
         double max = sizes.Length == 0 ? 0 : sizes[^1];
         double p95 = sizes.Length == 0 ? 0 : Percentile(sizes, 0.95);
 
-        var resources = entries
+        var resources = entryList
             .GroupBy(e => e.Resource)
             .Select(g => (resource: g.Key, count: g.Count()))
             .OrderByDescending(t => t.count)
@@ -31,14 +34,14 @@ public sealed class LogStatsAggregator : ILogStatsAggregator
             .Select(t => (t.resource, t.count))
             .ToList();
 
-        var codes = entries
+        var codes = entryList
             .GroupBy(e => e.StatusCode)
             .Select(g => (code: g.Key, count: g.Count()))
             .OrderByDescending(t => t.count)
             .ThenBy(t => t.code)
             .ToList();
 
-        var perDate = entries
+        var perDate = entryList
             .GroupBy(e => DateOnly.FromDateTime(e.TimestampUtc.Date))
             .OrderBy(g => g.Key)
             .Select(g =>
@@ -51,7 +54,7 @@ public sealed class LogStatsAggregator : ILogStatsAggregator
             })
             .ToList();
 
-        var protocols = entries
+        var protocols = entryList
             .GroupBy(e => e.Protocol)
             .Select(g => (protocol: g.Key, count: g.Count()))
             .OrderByDescending(p => p.protocol.StartsWith("HTTP/", StringComparison.OrdinalIgnoreCase))
@@ -60,7 +63,7 @@ public sealed class LogStatsAggregator : ILogStatsAggregator
             .Select(p => p.protocol)
             .ToList();
 
-        return new LogStats(files, total, (avg, max, p95), resources, codes, perDate, protocols);
+        return new LogStats(fileList, total, (avg, max, p95), resources, codes, perDate, protocols);
     }
 
     private static double Percentile(double[] sorted, double percentile)
