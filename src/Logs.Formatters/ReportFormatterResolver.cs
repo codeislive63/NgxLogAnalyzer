@@ -1,4 +1,5 @@
 using Logs.Core.Application.Abstractions.Reporting;
+using Logs.Core.Application.Exceptions;
 
 namespace Logs.Formatters;
 
@@ -17,6 +18,11 @@ public sealed class ReportFormatterResolver(IEnumerable<IReportFormatter> format
     /// </summary>
     public IReportFormatter Resolve(string name)
     {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new CliException("Имя формата не может быть пустым");
+        }
+
         var fmt = _formatters.FirstOrDefault(f =>
             string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase)
         );
